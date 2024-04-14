@@ -1,5 +1,15 @@
+# Overview 
+The code and data was used in the paper ``In Search of the True Greenium'' by Eskildsen, Ibert, Jensen, and Pedersen (2024). If you the code and/or the data, please cite the paper accordingly using:
+```
+@article{greenium2024,
+  title={In Search of the True Greenium},
+  author={Eskildsen, Marc and Ibert, Markus and Jensen, Theis Ingerslev and Pedersen, Lasse Heje},
+  year={2024}
+}
+```
+
 # Implied cost of capital - Data
-Code to generate the implied cost of capital measures used in Eskildsen, Ibert, Jensen, and Pedersen (2024). The data is available here:
+Code to generate the implied cost of capital measures used in  The data is available here:
 https://www.dropbox.com/scl/fo/j10kaoqlxe4vc1exw2efa/h?rlkey=coqucul5f6uuhrgy259v18v6n&dl=0 
 The folder also contains a description of the columns in the data sets.
 
