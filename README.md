@@ -1,5 +1,5 @@
 # Overview 
-The code and data was used in the paper ``In Search of the True Greenium'' by Eskildsen, Ibert, Jensen, and Pedersen (2024). If you the code and/or the data, please cite the paper accordingly using:
+The data from this code base was used in the paper ``In Search of the True Greenium'' by [Eskildsen, Ibert, Jensen, and Pedersen (2024)](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4744608). If you use the code and/or the data, please cite the paper:
 ```
 @article{greenium2024,
   title={In Search of the True Greenium},
