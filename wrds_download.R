@@ -65,6 +65,7 @@ if (T) {
     ON a.gvkey=b.gvkey AND a.iid=b.iid
     WHERE b.tpci='0' and b.ibtic<>'' and a.ajexdi IS NOT NULL and a.prccd IS NOT NULL and a.curcdd<>'';
   " 
+  system.time(wrds |> wrds_fetch(sql_string) |> fwrite("WRDS-DATA/comp_g_secd.csv"))
   # NA prices daily
   sql_string <- "
     SELECT a.gvkey, a.iid, a.datadate, a.curcdd, a.ajexdi, a.prccd, b.ibtic
