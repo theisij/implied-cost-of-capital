@@ -12,7 +12,9 @@ library(RPostgres)
 library(arrow)
 
 # Run code chunks ----------------------------
-source("icc_functions.R")
-source("wrds_download.R")
-source("icc_comp.R")
-source("icc_us.R")
+ECHO <- TRUE
+source("0-icc_functions.R", echo = ECHO)
+source("1-wrds_download.R", echo = ECHO)
+source("2-icc_comp.R", echo = ECHO)
+source("3-icc_us.R", echo = ECHO)
+source("4-analyze.R", echo = ECHO)
