@@ -100,7 +100,7 @@ ff49_fun <- function(sic) {
 prepare_icc_data <- function(daily_p, epsf, epsa, acc_g, acc_us, po_pref, bps, dps, rf10, ff49_ind) {
   # EPS forecasts
   epsf_st <- epsf[measure == "EPS" & fpi %in% 1:2, .(id, datadate, fpi = paste0("eps", fpi), value_adj)]
-  epsf_st <- epsf_st %>% dcast(id+datadate~fpi, value.var = "value_adj")
+  epsf_st <- epsf_st |> dcast(id+datadate~fpi, value.var = "value_adj")
   # Extend eps2 (lacking in early years)
   epsf_st[is.na(eps2), eps2 := eps1*(1+0.15)]
   # Coverage [require coverage in past 12 months and compute average]
@@ -164,12 +164,12 @@ prepare_icc_data <- function(daily_p, epsf, epsa, acc_g, acc_us, po_pref, bps, d
   roe_comp <- roe_comp[n==1 | (n==2 & int==T)]
   # Industry average ROE over past 10 years
   roe_comp <- roe_comp[, .(gvkey, "public_date"=as.Date(datadate)+1+months(4)-1, roe, ff49)]
-  roe_comp <- as.Date(unique(epsf_st$datadate)) %>% lapply(function(m) {
+  roe_comp <- as.Date(unique(epsf_st$datadate)) |> lapply(function(m) {
     roe_comp[public_date>=(m+1-years(10)-1) & public_date<=m, .(
       n = .N, 
       roe_ind = median(roe)
     ), by = ff49][, datadate := m]
-  }) %>% rbindlist()
+  }) |> rbindlist()
   roe_comp[, p01 := quantile(roe_ind, 0.01)]
   roe_comp[, p99 := quantile(roe_ind, 0.99)] # Maybe just cap at 0 and 1 (but the latter is questionable?
   roe_comp[, roe_ind := pmin(p99, pmax(roe_ind, p01))][, c("p01", "p99") := NULL]
@@ -229,7 +229,7 @@ icc_peg_fun <- function(data) {
 }
 # Gebhardt, Lee, and Swaminathan (2001)
 icc_gls_fun <- function(data, root_low, root_high) { 
-  gls <- data[, .(id, datadate, eps1, eps2, bps0, prc_adj, po, roe_ind)] %>% na.omit()
+  gls <- data[, .(id, datadate, eps1, eps2, bps0, prc_adj, po, roe_ind)] |> na.omit()
   gls <- gls[!is.infinite(eps1) & !is.infinite(bps0)]
   gls[, bps1 := bps0+eps1*(1-po)]
   gls[, bps2 := bps1+eps2*(1-po)]
@@ -265,8 +265,8 @@ icc_gls_fun <- function(data, root_low, root_high) {
   }
   
   # Check that range is of same sign
-  gls <- gls %>%
-    rowwise() %>%
+  gls <- gls |>
+    rowwise() |>
     mutate(
       int_low = gls_func(r = root_low, p=prc_adj, 
                          bps0=bps0, bps1=bps1, bps2=bps2, bps3=bps3, bps4=bps4, bps5=bps5,
@@ -279,10 +279,10 @@ icc_gls_fun <- function(data, root_low, root_high) {
                           roe1=roe1, roe2=roe2, roe3=roe3, roe4=roe4, roe5=roe5, roe6=roe6, 
                           roe7=roe7, roe8=roe8, roe9=roe9, roe10=roe10, roe11=roe11, roe12=roe12)
     )
-  gls %>% ungroup() %>% summarise(mean(sign(int_low)==sign(int_high), na.rm=T))
+  gls |> ungroup() |> summarise(mean(sign(int_low)==sign(int_high), na.rm=T))
   # Fit
-  gls <- gls %>%
-    filter(sign(int_high) != sign(int_low) & !is.na(int_low)) %>%
+  gls <- gls |>
+    filter(sign(int_high) != sign(int_low) & !is.na(int_low)) |>
     mutate(
       icc_gls = uniroot(gls_func, interval = c(root_low, root_high), p=prc_adj, 
                         bps0=bps0, bps1=bps1, bps2=bps2, bps3=bps3, bps4=bps4, bps5=bps5,
@@ -291,11 +291,11 @@ icc_gls_fun <- function(data, root_low, root_high) {
                         roe7=roe7, roe8=roe8, roe9=roe9, roe10=roe10, roe11=roe11, roe12=roe12)$root
     )
   # Output
-  gls %>% ungroup() %>% select(id, datadate, icc_gls) %>% setDT()
+  gls |> ungroup() |> select(id, datadate, icc_gls) |> setDT()
 }
 # Claus and Thomas (2001) --------------
 icc_ct_fun <- function(data, root_low, root_high) {
-  ct <- data[, .(id, datadate, eps1, eps2, ltg, bps0, prc_adj, po, roe_ind, g=rf10-0.03)] %>% na.omit()
+  ct <- data[, .(id, datadate, eps1, eps2, ltg, bps0, prc_adj, po, roe_ind, g=rf10-0.03)] |> na.omit()
   ct <- ct[!is.infinite(eps1) & !is.infinite(bps0)]
   ct[, bps1 := bps0+eps1*(1-po)]
   ct[, bps2 := bps1+eps2*(1-po)]
@@ -321,8 +321,8 @@ icc_ct_fun <- function(data, root_low, root_high) {
   }
   
   # Check that range is of same sign
-  ct <- ct %>%
-    rowwise() %>%
+  ct <- ct |>
+    rowwise() |>
     mutate(
       r_low = pmax(root_low, g+0.001),
       int_low = ct_func(r = r_low, p=prc_adj, g=g, 
@@ -333,16 +333,16 @@ icc_ct_fun <- function(data, root_low, root_high) {
                          roe1=roe1, roe2=roe2, roe3=roe3, roe4=roe4, roe5=roe5)
     )
   
-  ct %>% ungroup() %>% summarise(mean(sign(int_low)==sign(int_high), na.rm=T))
+  ct |> ungroup() |> summarise(mean(sign(int_low)==sign(int_high), na.rm=T))
   
   # Fit
-  ct <- ct %>%
-    filter(sign(int_high) != sign(int_low) & !is.na(int_low)) %>%
+  ct <- ct |>
+    filter(sign(int_high) != sign(int_low) & !is.na(int_low)) |>
     mutate(
       icc_ct = uniroot(ct_func, interval = c(r_low, root_high), p=prc_adj, g=g, 
                        bps0=bps0, bps1=bps1, bps2=bps2, bps3=bps3, bps4=bps4, 
                        roe1=roe1, roe2=roe2, roe3=roe3, roe4=roe4, roe5=roe5)$root
     )
   # Output
-  ct %>% ungroup() %>% select(id, datadate, icc_ct) %>% setDT()
+  ct |> ungroup() |> select(id, datadate, icc_ct) |> setDT()
 }

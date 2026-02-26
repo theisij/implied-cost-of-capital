@@ -224,7 +224,7 @@ icc <- icc_gls[icc, on = .(id, datadate)]
 icc <- icc_ct[icc, on = .(id, datadate)]
 icc <- icc[!is.na(icc_ct) | !is.na(icc_gls) | !is.na(icc_peg) | !is.na(icc_oj)]
 # Save -----------------------------------------
-icc %>% write_parquet("OUTPUT/icc_comp.parquet")
+icc |> write_parquet("OUTPUT/icc_comp.parquet")
 
 
 

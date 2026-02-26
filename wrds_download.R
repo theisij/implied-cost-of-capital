@@ -156,7 +156,7 @@ if (T) {
   fredr_set_key(fred_apikey) # Get key form st. louis FED
   # 10-year
   rf10 <- fredr(series_id = "DGS10")
-  rf10 %>% write_parquet("WRDS-DATA/rf10_fred.parquet")
+  rf10 |> write_parquet("WRDS-DATA/rf10_fred.parquet")
 }
 
 

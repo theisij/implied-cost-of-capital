@@ -165,7 +165,7 @@ crsp_dsf[, merge_date := as.Date(datadate)]
 crsp_dsf <- crsp_comp_link[,.(permno, gvkey, start=as.Date(start), end=as.Date(end))][crsp_dsf, on = .(permno, start<=merge_date, end>=merge_date)][, c("start", "end") := NULL]
 # Change permno to id
 for (x in list(crsp_dsf, statsumu, actu, bps_comb, dps_ib)) {
-  x %>% setnames(old = "permno", new = "id")
+  x |> setnames(old = "permno", new = "id")
 }
 
 # Data
@@ -193,7 +193,7 @@ icc <- icc_gls[icc, on = .(id, datadate)]
 icc <- icc_ct[icc, on = .(id, datadate)]
 icc <- icc[!is.na(icc_ct) | !is.na(icc_gls) | !is.na(icc_peg) | !is.na(icc_oj)]
 # Save -----------------------------------------
-icc %>% write_parquet("OUTPUT/icc_us.parquet")
+icc |> write_parquet("OUTPUT/icc_us.parquet")
 
 # Forwards E/P -----------
 if (FALSE) {
