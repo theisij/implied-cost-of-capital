@@ -8,4 +8,5 @@ icc_comp.csv
 icc_us.csv
 WRDS-DATA/*
 !WRDS-DATA/.gitkeep
+!WRDS-DATA/exchange_rates.csv
 compare_global_to_comp.R
