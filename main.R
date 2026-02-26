@@ -9,6 +9,7 @@ library(lubridate)
 library(tidyverse)
 library(data.table)
 library(RPostgres)
+library(arrow)
 
 # Run code chunks ----------------------------
 source("icc_functions.R")

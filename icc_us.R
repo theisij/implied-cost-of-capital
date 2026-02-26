@@ -1,16 +1,16 @@
 # Prepare data ------------------------------
 # Linking table -----
 # Comp-IBES link 
-crsp_ibes_link <- fread("WRDS-DATA/crsp_ibes_link.csv")
+crsp_ibes_link <- read_parquet("WRDS-DATA/crsp_ibes_link.parquet") |> setDT()
 # Current link stops in Mar-2023. Extend to Dec-2023
 crsp_ibes_link[edate==as.Date("2022-03-31"), edate := as.Date("2022-12-31")]
 # CRSP-COMP link 
-crsp_comp_link <- fread("WRDS-DATA/crsp_comp_link.csv", colClasses = c("gvkey"="character", "iid"="character"))
+crsp_comp_link <- read_parquet("WRDS-DATA/crsp_comp_link.parquet") |> setDT()
 crsp_comp_link[, end := if_else(is.na(end), max(end, na.rm=T), end)]
 
 
 # CRSP prices ------------------------------
-crsp_dsf <- fread("WRDS-DATA/crsp_dsf.csv")
+crsp_dsf <- read_parquet("WRDS-DATA/crsp_dsf.parquet") |> setDT()
 crsp_dsf |> setnames(old = "date", new = "datadate")
 # Adjustment factor ------------------------
 crsp_dsf |> setorder(permno, datadate)
@@ -27,11 +27,11 @@ crsp_dsf <- crsp_dsf[,.(permno, datadate, prc_adj = prc/cfacshr)]
 
 # Remaining data ----------------------------------
 # Exchange rates
-ex_rates <- fread("WRDS-DATA/exchange_rates.csv", colClasses = c("date"="character"))
+ex_rates <- read_parquet("WRDS-DATA/exchange_rates.parquet") |> setDT()
 ex_rates[, datadate := as.Date(date, format = "%Y%m%d")][, date := NULL]
 
 # Statsumu  
-statsumu <- fread("WRDS-DATA/statsumu_epsus.csv")
+statsumu <- read_parquet("WRDS-DATA/statsumu_epsus.parquet") |> setDT()
 statsumu |> setnames(old = c("ticker", "curcode", "statpers"), new = c("ibtic", "curcdd", "datadate"))
 statsumu[, value := medest]
 statsumu <- statsumu[!is.na(value)]
@@ -46,32 +46,32 @@ crsp_dsf[datadate<=ib_date, max_date := max(datadate), by = .(permno, eom)]
 crsp_dsf <- crsp_dsf[datadate==max_date][, .(permno, datadate=ib_date, prc_adj)]
 
 # Actu 
-actu <- fread("WRDS-DATA/ibes_actu_epsus.csv")
+actu <- read_parquet("WRDS-DATA/ibes_actu_epsus.parquet") |> setDT()
 actu |> setnames(old = c("ticker", "curr_act", "pends"), new = c("ibtic", "curcdd", "datadate"))
 actu <- actu[!is.na(value)]
 
 # BPS 
-bps <- fread("WRDS-DATA/ibes.actu_xepsus_bps.csv")
+bps <- read_parquet("WRDS-DATA/ibes_actu_xepsus_bps.parquet") |> setDT()
 bps |> setnames(old = c("ticker", "curr_act", "pends"), new = c("ibtic", "curcdd", "datadate"))
 bps <- bps[!is.na(value)] # Already in SQL statement
 
 # DPS IBES 
-dps_ib <- fread("WRDS-DATA/ibes_statsumu_xepsus_dps.csv")
+dps_ib <- read_parquet("WRDS-DATA/ibes_statsumu_xepsus_dps.parquet") |> setDT()
 dps_ib |> setnames(old = c("ticker", "curcode", "statpers"), new = c("ibtic", "curcdd", "datadate"))
 dps_ib[, value := medest]
 dps_ib <- dps_ib[!is.na(value)]
 
 # CRSP SIC codes (for historical)
-crsp_sic <- fread("WRDS-DATA/crsp_dsenames_sic.csv")
+crsp_sic <- read_parquet("WRDS-DATA/crsp_dsenames_sic.parquet") |> setDT()
 
 # Compustat g_funda
-funda_g <- fread("WRDS-DATA/comp_g_funda.csv", colClasses = c("gvkey"="character"))
+funda_g <- read_parquet("WRDS-DATA/comp_g_funda.parquet") |> setDT()
 
 # Compustat funda
-funda <- fread("WRDS-DATA/comp_funda.csv", colClasses = c("gvkey"="character"))
+funda <- read_parquet("WRDS-DATA/comp_funda.parquet") |> setDT()
 
 # 10 year US treasury rate 
-rf10 <- fread("WRDS-DATA/rf10_fred.csv")
+rf10 <- read_parquet("WRDS-DATA/rf10_fred.parquet") |> setDT()
 rf10 <- rf10[!is.na(value), .(start=date, rf10=value/100)][order(start)]
 rf10[, end := shift(start, 1, type="lead")-1]
 rf10[is.na(end), end := start]
@@ -193,12 +193,12 @@ icc <- icc_gls[icc, on = .(id, datadate)]
 icc <- icc_ct[icc, on = .(id, datadate)]
 icc <- icc[!is.na(icc_ct) | !is.na(icc_gls) | !is.na(icc_peg) | !is.na(icc_oj)]
 # Save -----------------------------------------
-icc %>% fwrite("icc_us.csv")
+icc %>% write_parquet("OUTPUT/icc_us.parquet")
 
 # Forwards E/P -----------
 if (FALSE) {
   icc_data[, .(id, datadate, eps0_p = eps0/prc_adj, eps1_p = eps1/prc_adj, eps2_p = eps2/prc_adj)] |> 
-    fwrite("forward_eps_us.csv")
+    write_parquet("OUTPUT/forward_eps_us.parquet")
 }
 
 if (FALSE) {

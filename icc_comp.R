@@ -1,10 +1,10 @@
 # Prepare data ------------------------------
 # Linking table -----
 # Comp-IBES link - Global
-comp_ibes_g_link <- fread("WRDS-DATA/comp_g_security.csv", colClasses = c("gvkey"="character", "iid"="character"))
+comp_ibes_g_link <- read_parquet("WRDS-DATA/comp_g_security.parquet") |> setDT()
 comp_ibes_g_link[, type := "int"]
 # Comp-IBES link - NA
-comp_ibes_na_link <- fread("WRDS-DATA/comp_security.csv", colClasses = c("gvkey"="character", "iid"="character"))
+comp_ibes_na_link <- read_parquet("WRDS-DATA/comp_security.parquet") |> setDT()
 comp_ibes_na_link[, type := "na"]
 # Comp-IBES link - comb
 comp_ibes_link <- rbind(comp_ibes_g_link, comp_ibes_na_link)
@@ -13,11 +13,11 @@ comp_ibes_link[, n := .N, by = .(ibtic)]
 comp_ibes_link <- comp_ibes_link[n==1 | (n==1 & type=="na")][, type := NULL]
 
 # CRSP-COMP link 
-crsp_comp_link <- fread("WRDS-DATA/crsp_comp_link.csv", colClasses = c("gvkey"="character", "iid"="character"))
+crsp_comp_link <- read_parquet("WRDS-DATA/crsp_comp_link.parquet") |> setDT()
 crsp_comp_link[, end := if_else(is.na(end), max(end, na.rm=T), end)]
 
 # Compustat prices (Global) -------------------------
-comp_p_g <- fread("WRDS-DATA/comp_g_secd.csv", colClasses = c("gvkey"="character", "iid"="character"))
+comp_p_g <- read_parquet("WRDS-DATA/comp_g_secd.parquet") |> setDT()
 comp_p_g <- comp_p_g[curcdd != "" & !is.na(ajexdi) & !is.na(prccd)]
 # Get adjfct 
 comp_p_g |> setorder(gvkey, iid, datadate)
@@ -32,7 +32,7 @@ adjfct_g[!is.na(next_start), end := next_start-1][, next_start := NULL]
 # Compress comp prices
 comp_p_g <- comp_p_g[,.(gvkey, iid, datadate, curcdd, prc_adj = prccd/ajexdi)]
 # Compustat prices (NA) -------------------------
-comp_p_na <- fread("WRDS-DATA/comp_secd.csv", colClasses = c("gvkey"="character", "iid"="character"))
+comp_p_na <- read_parquet("WRDS-DATA/comp_secd.parquet") |> setDT()
 comp_p_na <- comp_p_na[curcdd != "" & !is.na(ajexdi) & !is.na(prccd)]
 # Get adjfct 
 comp_p_na |> setorder(gvkey, iid, datadate)
@@ -50,11 +50,11 @@ comp_p_na <- comp_p_na[,.(gvkey, iid, datadate, curcdd, prc_adj = prccd/ajexdi)]
 adjfct <- rbind(adjfct_na, adjfct_g)
 rm(adjfct_g, adjfct_na)
 # Exchange rates ------------------
-ex_rates <- fread("WRDS-DATA/exchange_rates.csv", colClasses = c("date"="character"))
+ex_rates <- read_parquet("WRDS-DATA/exchange_rates.parquet") |> setDT()
 ex_rates[, datadate := as.Date(date, format = "%Y%m%d")][, date := NULL]
 # Statsumu --------------------------------
-statsumu_int <- fread("WRDS-DATA/statsumu_epsint.csv")
-statsumu_us <- fread("WRDS-DATA/statsumu_epsus.csv")
+statsumu_int <- read_parquet("WRDS-DATA/statsumu_epsint.parquet") |> setDT()
+statsumu_us <- read_parquet("WRDS-DATA/statsumu_epsus.parquet") |> setDT()
 statsumu <- rbind(statsumu_int, statsumu_us) 
 rm(statsumu_int, statsumu_us)
 statsumu |> setnames(old = c("ticker", "curcode", "statpers"), new = c("ibtic", "curcdd", "datadate"))
@@ -76,35 +76,35 @@ comp_p <- comp_p[datadate==max_date][, .(gvkey, iid, datadate=ib_date, curcdd, p
 comp_p <- ex_rates[comp_p, on = .(curcdd, datadate)]
 comp_p[, prc_adj := prc_adj*fx][, c("curcdd", "fx") := NULL]
 # Actuals - EPS ---------------------------------------
-actu_int <- fread("WRDS-DATA/ibes_actu_epsint.csv")
-actu_us <- fread("WRDS-DATA/ibes_actu_epsus.csv")
+actu_int <- read_parquet("WRDS-DATA/ibes_actu_epsint.parquet") |> setDT()
+actu_us <- read_parquet("WRDS-DATA/ibes_actu_epsus.parquet") |> setDT()
 actu <- rbind(actu_int, actu_us) 
 rm(actu_int, actu_us)
 actu |> setnames(old = c("ticker", "curr_act", "pends"), new = c("ibtic", "curcdd", "datadate"))
 actu <- actu[!is.na(value)]
 # Actuals - BPS ---------------------------------------
-bps_int <- fread("WRDS-DATA/ibes.actu_xepsint_bps.csv")
-bps_us <- fread("WRDS-DATA/ibes.actu_xepsus_bps.csv")
+bps_int <- read_parquet("WRDS-DATA/ibes_actu_xepsint_bps.parquet") |> setDT()
+bps_us <- read_parquet("WRDS-DATA/ibes_actu_xepsus_bps.parquet") |> setDT()
 bps <- rbind(bps_int, bps_us) 
 rm(bps_int, bps_us)
 bps |> setnames(old = c("ticker", "curr_act", "pends"), new = c("ibtic", "curcdd", "datadate"))
 bps <- bps[!is.na(value)] # Already in SQL statement
 # Forecasts - DPS ---------------------------------------
-dps_int <- fread("WRDS-DATA/ibes_statsumu_xepsint_dps.csv")
-dps_us <- fread("WRDS-DATA/ibes_statsumu_xepsus_dps.csv")
+dps_int <- read_parquet("WRDS-DATA/ibes_statsumu_xepsint_dps.parquet") |> setDT()
+dps_us <- read_parquet("WRDS-DATA/ibes_statsumu_xepsus_dps.parquet") |> setDT()
 dps_ib <- rbind(dps_int, dps_us) 
 rm(dps_int, dps_us)
 dps_ib |> setnames(old = c("ticker", "curcode", "statpers"), new = c("ibtic", "curcdd", "datadate"))
 dps_ib[, value := medest]
 dps_ib <- dps_ib[!is.na(value)]
 # CRSP SIC codes (for historical)
-crsp_sic <- fread("WRDS-DATA/crsp_dsenames_sic.csv")
+crsp_sic <- read_parquet("WRDS-DATA/crsp_dsenames_sic.parquet") |> setDT()
 # Compustat g_funda
-funda_g <- fread("WRDS-DATA/comp_g_funda.csv", colClasses = c("gvkey"="character"))
+funda_g <- read_parquet("WRDS-DATA/comp_g_funda.parquet") |> setDT()
 # Compustat funda
-funda <- fread("WRDS-DATA/comp_funda.csv", colClasses = c("gvkey"="character"))
+funda <- read_parquet("WRDS-DATA/comp_funda.parquet") |> setDT()
 # 10 year US treasury rate 
-rf10 <- fread("WRDS-DATA/rf10_fred.csv")
+rf10 <- read_parquet("WRDS-DATA/rf10_fred.parquet") |> setDT()
 rf10 <- rf10[!is.na(value), .(start=date, rf10=value/100)][order(start)]
 rf10[, end := shift(start, 1, type="lead")-1]
 rf10[is.na(end), end := start]
@@ -224,7 +224,7 @@ icc <- icc_gls[icc, on = .(id, datadate)]
 icc <- icc_ct[icc, on = .(id, datadate)]
 icc <- icc[!is.na(icc_ct) | !is.na(icc_gls) | !is.na(icc_peg) | !is.na(icc_oj)]
 # Save -----------------------------------------
-icc %>% fwrite("icc_comp.csv")
+icc %>% write_parquet("OUTPUT/icc_comp.parquet")
 
 
 
@@ -232,7 +232,7 @@ icc %>% fwrite("icc_comp.csv")
 # Forwards E/P -----------
 if (FALSE) {
   icc_data[, .(id, datadate, eps0_p = eps0/prc_adj, eps1_p = eps1/prc_adj, eps2_p = eps2/prc_adj)] |> 
-    fwrite("forward_eps_comp.csv")
+    write_parquet("OUTPUT/forward_eps_comp.parquet")
 }
 
 

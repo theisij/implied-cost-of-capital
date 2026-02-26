@@ -1,11 +1,8 @@
 .Rproj.user
 .Rhistory
 old/
-forward_eps_comp.csv
-forward_eps_us.csv
-forward_eps_global.csv
-icc_comp.csv
-icc_us.csv
+OUTPUT/*
+!OUTPUT/.gitkeep
 WRDS-DATA/*
 !WRDS-DATA/.gitkeep
 compare_global_to_comp.R
