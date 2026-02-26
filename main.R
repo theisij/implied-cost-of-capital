@@ -2,7 +2,7 @@
 # Users need to modify the three variables below to their own credentials
 wrds_username <- "YOURWRDSUSENAME"
 wrds_password <- "YOURWRDSPASSWORD"
-fread_apikey <- "YOURFREDAPIKEY"
+fred_apikey <- "YOURFREDAPIKEY"
 
 # Libraries ---------------------------------
 library(lubridate)
