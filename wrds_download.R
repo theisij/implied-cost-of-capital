@@ -160,60 +160,37 @@ if (T) {
 }
 
 
-# EXCHANGE RATES (COMPUTED IN WRDS CLOUD) ----------------------------------
-if (FALSE) {
+# EXCHANGE RATES ---------------------------------------------------------------
+# Replicates 01-exchange_rates.sas: computes USD exchange rates using
+# comp.exrt_dly with GBP as intermediate currency, then fills date gaps (LOCF)
+if (T) {
+  # Download raw exchange rates from WRDS
+  sql_string <- "
+    SELECT fromcurd, tocurd, datadate, exratd
+    FROM comp.exrt_dly
+    WHERE fromcurd = 'GBP'
   "
-  /* USD to Foreign FX Conversion Rate from Compustat*/
-    %macro compustat_fx(out=);
-  data usd_curcdd; 
-  curcdd='USD';
-  datadate=input(put(19500101,8.),yymmdd8.);
-  fx=1;
-  format datadate yymmddn8.;
-  run;  /* comp.exrt_dly only starts in 1982 and since we convert to USD we know that the fx for USD is 1 */
-    
-    proc sql; 
-  create table __fx1 as
-  select distinct a.tocurd as  curcdd  , a.datadate,  b.exratd/a.exratd as fx /*fx is quoted as x/USD so to go from x to USD do x*fx*/
-    from comp.exrt_dly a , comp.exrt_dly b
-  where a.fromcurd = 'GBP' and b.tocurd = 'USD' /*b.exratd is always from GBP to USD, a.exratd is from GBP to currency X*/
-    and a.fromcurd = b.fromcurd and a.datadate = b.datadate;
-  quit;
-  
-  data __fx2; set __fx1 usd_curcdd; run; 
-  
-  proc sort data = __fx2;  by curcdd descending datadate; run ; 
-  
-  /* Carry forward fx observations in case gaps*/
-    data __fx3; format date YYMMDDN8.; 
-  set __fx2;
-  by curcdd;
-  date = datadate;
-  output;
-  following = lag(date); 
-  if first.curcdd then
-  following = date+1;
-  n = following-date;
-  do i=1 to n-1;
-  date = date+1; output;
-  end;
-  
-  drop datadate following n i;
-  run;
-  
-  proc sort data=__fx3 out=&out nodupkey; by curcdd date; run;
-  
-  proc delete data=usd_curcdd __fx1 __fx2 __fx3; run;
-  %mend compustat_fx; 
-  
-  %compustat_fx(out=ex_rates);
-  
-  proc export data=ex_rates
-  outfile='~/exchange_rates.csv'   
-  dbms=CSV
-  replace;
-  run;
-  
-  "
-  
+  exrt_dly <- wrds |> wrds_fetch(sql_string)
+  exrt_dly[, datadate := as.Date(datadate)]
+  # Compute cross-rates locally: fx = (GBP->USD) / (GBP->X) = X->USD
+  gbp_usd <- exrt_dly[tocurd == "USD", .(datadate, exratd_usd = exratd)]
+  fx_raw <- exrt_dly[gbp_usd, on = "datadate", nomatch = NULL]
+  fx_raw <- unique(fx_raw[, .(curcdd = tocurd, datadate, fx = exratd_usd / exratd)])
+  rm(exrt_dly, gbp_usd)
+  # Add USD = 1 starting from 1950 (comp.exrt_dly only starts in 1982)
+  usd <- data.table(curcdd = "USD", datadate = as.Date("1950-01-01"), fx = 1)
+  fx <- rbind(fx_raw, usd)
+  # Fill date gaps with LOCF per currency
+  max_date <- fx[, max(datadate)]
+  fx_filled <- fx[order(curcdd, datadate), {
+    all_dates <- data.table(datadate = seq.Date(min(datadate), max_date, by = "day"))
+    out <- .SD[all_dates, on = "datadate"]
+    out[, fx := nafill(fx, type = "locf")]
+    out
+  }, by = curcdd]
+  # Format to match SAS output (date as YYYYMMDD string)
+  ex_rates <- fx_filled[, .(date = format(datadate, "%Y%m%d"), curcdd, fx)]
+  ex_rates |> setorder(curcdd, date)
+  ex_rates |> fwrite("WRDS-DATA/exchange_rates.csv")
+  rm(fx_raw, usd, fx, max_date, fx_filled, ex_rates)
 }
