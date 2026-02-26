@@ -230,8 +230,8 @@ icc |> write_parquet("OUTPUT/icc_comp.parquet")
 
 
 # Forwards E/P -----------
-if (FALSE) {
-  icc_data[, .(id, datadate, eps0_p = eps0/prc_adj, eps1_p = eps1/prc_adj, eps2_p = eps2/prc_adj)] |> 
+if (TRUE) {
+  icc_data[, .(id, datadate, eps0_p = eps0/prc_adj, eps1_p = eps1/prc_adj, eps2_p = eps2/prc_adj)] |>
     write_parquet("OUTPUT/forward_eps_comp.parquet")
 }
 

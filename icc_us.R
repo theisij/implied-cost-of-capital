@@ -196,8 +196,8 @@ icc <- icc[!is.na(icc_ct) | !is.na(icc_gls) | !is.na(icc_peg) | !is.na(icc_oj)]
 icc |> write_parquet("OUTPUT/icc_us.parquet")
 
 # Forwards E/P -----------
-if (FALSE) {
-  icc_data[, .(id, datadate, eps0_p = eps0/prc_adj, eps1_p = eps1/prc_adj, eps2_p = eps2/prc_adj)] |> 
+if (TRUE) {
+  icc_data[, .(id, datadate, eps0_p = eps0/prc_adj, eps1_p = eps1/prc_adj, eps2_p = eps2/prc_adj)] |>
     write_parquet("OUTPUT/forward_eps_us.parquet")
 }
 
