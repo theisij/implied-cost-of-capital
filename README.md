@@ -28,6 +28,15 @@ fred_apikey <- "YOURFREDAPIKEY"
 ```
 - Step 5: Run the script `main.R` to generate the data
 
+`main.R` executes the following scripts in order:
+| Script | Description |
+|---|---|
+| `0-icc_functions.R` | Shared functions (FF49 classification, ICC calculations) |
+| `1-wrds_download.R` | Downloads data from WRDS and FRED to `WRDS-DATA/` |
+| `2-icc_comp.R` | Computes ICC using Compustat prices (US + global) |
+| `3-icc_us.R` | Computes ICC using CRSP prices (US only) |
+| `4-analyze.R` | Summary plots of ICC estimates |
+
 After executing these steps, the `OUTPUT/` folder should contain the following files:
 - `icc_us.parquet`: ICC estimates for the US based on prices from CRSP
 - `icc_comp.parquet`: ICC estimates for the US and globally, based on prices from Compustat
